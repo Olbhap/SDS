@@ -1,0 +1,17 @@
+Create una carpeta llamada servidor las otras ya las crea él 
+pero esa tienes que crearla tú
+go run Servidor.go
+go run Cliente.go nombre_usuario
+luego tienes que introducir el nombre de la carpeta que quieres copiar
+por ejemplo
+./ejemplo
+
+Para que el servidor cierre la conexion con el cliente debes de poner
+Salir
+
+La idea que tengo es que el cliente introduzca : up / down  f /d  fichero/directorio
+up f ejemplo.txt
+down d ./ej
+
+de momento esta estatico copia solo carpetas 
+falta ver como coger de esa entrada por teclado cada parte por separado up/down por un lado ,la f/d por otro y el fichero/carpeta por otro .
