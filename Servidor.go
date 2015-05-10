@@ -29,6 +29,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net"
 	"os"
 )
@@ -57,6 +58,13 @@ type Msg struct {
 	Comando string
 	Tipo    string
 	Nombre  string
+}
+
+func listar() {
+	files, _ := ioutil.ReadDir("./")
+	for _, f := range files {
+		fmt.Println(f.Name())
+	}
 }
 
 // gestiona el modo servidor
@@ -124,7 +132,7 @@ func server() {
 			je = json.NewEncoder(aeswr)
 			jd = json.NewDecoder(aesrd)
 			var i string = ""
-			for i != "Salir"{
+			for i != "Salir" {
 				// envíamos un mensaje de HELLO (ejemplo)
 				je.Encode(&Msg{Usuario: "Servidor", Comando: "", Tipo: "t", Nombre: "./ej"})
 
@@ -132,7 +140,7 @@ func server() {
 				var m Msg
 				jd.Decode(&m)
 				fmt.Println(m)
-				i=m.Nombre
+				i = m.Nombre
 				if Comprobar(m) == true {
 					if m.Tipo == "f" {
 						sourceinfo, err := os.Stat(m.Nombre)
@@ -142,12 +150,15 @@ func server() {
 
 						err = os.MkdirAll("servidor/"+m.Usuario+"/", sourceinfo.Mode())
 						if err != nil {
+							fmt.Println(err)
 
 						}
 
 						//CopyDir(m.Nombre, "servidor/"+m.Usuario+"/"+m.Nombre)
+						listar()
 						CopyFile(m.Nombre, "servidor/"+m.Usuario+"/"+m.Nombre)
 					} else {
+						listar()
 						CopyDir(m.Nombre, "servidor/"+m.Usuario+"/"+m.Nombre)
 					}
 				}
@@ -199,9 +210,11 @@ func ComprobarTipo(mensaje Msg) bool {
 
 //Copia ficheros crea el fichero destino
 func CopyFile(source string, dest string) (err error) {
-
+	fmt.Println("Copiando fichero...")
 	sourcefile, err := os.Open(source)
 	if err != nil {
+		fmt.Print("1 ")
+		fmt.Println(err)
 		return err
 	}
 
@@ -209,6 +222,8 @@ func CopyFile(source string, dest string) (err error) {
 
 	destfile, err := os.Create(dest)
 	if err != nil {
+		fmt.Print("2 ")
+		fmt.Println(err)
 		return err
 	}
 
@@ -218,7 +233,10 @@ func CopyFile(source string, dest string) (err error) {
 	if err == nil {
 		sourceinfo, err := os.Stat(source)
 		if err != nil {
+
 			err = os.Chmod(dest, sourceinfo.Mode())
+			fmt.Print("3 ")
+			fmt.Println(err)
 		}
 
 	}
@@ -229,6 +247,7 @@ func CopyFile(source string, dest string) (err error) {
 //Copia todo el contenido de la carpeta indicada incluso las carpetas que hay dentro
 func CopyDir(source string, dest string) (err error) {
 
+	fmt.Println("Copiando directorio..." + source + " - " + dest)
 	sourceinfo, err := os.Stat(source)
 	if err != nil {
 		return err
