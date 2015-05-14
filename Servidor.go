@@ -19,22 +19,25 @@ package main
 
 import (
 	//"bufio"
-
-	"bufio"
+	"archive/tar"
+	//"bufio"
+	//"compress/gzip"
 	//"compress/flate"
-	"bytes"
+	//"bytes"
 	"compress/gzip"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
 	"crypto/rsa"
 	"encoding/json"
-	"flag"
+	//"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net"
 	"os"
+	"path/filepath"
+	"strings"
 )
 
 // función para comprobar errores (ahorra escritura)
@@ -143,11 +146,13 @@ func server() {
 				var m Msg
 				jd.Decode(&m)
 				fmt.Println(m)
-				i = m.Nombre
+				i = m.Comando
 				if Comprobar(m) == true {
 					if m.Tipo == "f" {
+						fmt.Println("aqui")
 						sourceinfo, err := os.Stat(m.Nombre)
 						if err == nil {
+							fmt.Println("aqui si no?")
 							fmt.Println("pe2")
 
 							err = os.MkdirAll("servidor/"+m.Usuario, sourceinfo.Mode())
@@ -156,37 +161,38 @@ func server() {
 								fmt.Println(err)
 
 							}
-
-							//CopyDir(m.Nombre, "servidor/"+m.Usuario+"/"+m.Nombre)
-							listar()
-							if m.Comando == "up" {
-
-								CopyFile(m.Nombre, "servidor/"+m.Usuario+"/"+m.Nombre)
-							} else if m.Comando == "delete" {
-								os.Remove("servidor/" + m.Usuario + "/" + m.Nombre)
-							} else {
-								Comprimir("servidor/" + m.Usuario + "/" + m.Nombre)
-
-								CopyFile("servidor/"+m.Usuario+"/"+m.Nombre+".gz", m.Nombre+".gz")
-								os.Remove("servidor/" + m.Usuario + "/" + m.Nombre + ".gz")
-							}
 						}
+						//CopyDir(m.Nombre, "servidor/"+m.Usuario+"/"+m.Nombre)
+						listar()
+						if m.Comando == "up" {
+
+							CopyFile(m.Nombre, "servidor/"+m.Usuario+"/"+m.Nombre)
+						} else if m.Comando == "delete" {
+							os.Remove("servidor/" + m.Usuario + "/" + m.Nombre)
+						} else if m.Comando == "down" {
+							//comprimir("servidor/" + m.Usuario + "/" + m.Nombre)
+
+							CopyFile("servidor/"+m.Usuario+"/"+m.Nombre, m.Nombre)
+							//os.Remove("servidor/" + m.Usuario + "/" + m.Nombre + "tar.gz")
+						}
+
 					} else {
 						listar()
 						if m.Comando == "up" {
 
 							CopyDir(m.Nombre, "servidor/"+m.Usuario+"/"+m.Nombre)
 						} else if m.Comando == "delete" {
-							//os.RemoveAll("servidor/" + m.Usuario + "/" + m.Nombre)
-						} else {
-							//Comprimir("servidor/" + m.Usuario + "/" + m.Nombre)
+							os.RemoveAll("servidor/" + m.Usuario + "/" + m.Nombre)
+						} else if m.Comando == "down" {
+							comprimir(m)
 
-							CopyDir("servidor/"+m.Usuario+"/"+m.Nombre, m.Nombre)
-							//os.Remove("servidor/" + m.Usuario + "/" + m.Nombre + ".gz")
+							CopyFile("servidor/"+m.Usuario+"/"+m.Nombre+"tar.gz", m.Nombre+"tar.gz")
+							os.Remove("servidor/" + m.Usuario + "/" + m.Nombre + "tar.gz")
 						}
 
 					}
 				}
+				fmt.Println("pruebassss")
 				//CopyFile(m.Id, "output.txt")
 				//CopyDir(m.Nombre, "servidor/"+m.Usuario+"/"+m.Nombre)
 				je.Encode(&Msg{Usuario: "TESTServidor", Comando: "pruebaServidor", Tipo: "t", Nombre: ""})
@@ -205,54 +211,85 @@ func server() {
 	}
 }
 
-func Comprimir(nombre string) bool {
-	flag.Parse() // get the arguments from command line
-
-	filename := nombre
-
-	if filename == "" {
-		fmt.Println("Usage : go-gzip sourcefile")
-		os.Exit(1)
-	}
-
-	rawfile, err := os.Open(filename)
+func checkerror(err error) {
 
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	defer rawfile.Close()
+}
 
-	// calculate the buffer size for rawfile
-	info, _ := rawfile.Stat()
+func comprimir(nombre Msg) {
 
-	var size int64 = info.Size()
-	rawbytes := make([]byte, size)
+	destinationfile := nombre.Nombre + ".tar.gz"
 
-	// read rawfile content into buffer
-	buffer := bufio.NewReader(rawfile)
-	_, err = buffer.Read(rawbytes)
-
-	if err != nil {
-		fmt.Println(err)
+	if destinationfile == "" {
+		fmt.Println("Usage : gotar destinationfile.tar.gz source")
 		os.Exit(1)
 	}
 
-	var buf bytes.Buffer
-	writer := gzip.NewWriter(&buf)
-	writer.Write(rawbytes)
-	writer.Close()
+	sourcedir := "servidor/" + nombre.Usuario + "/" + nombre.Nombre
 
-	err = ioutil.WriteFile(filename+".gz", buf.Bytes(), info.Mode())
-	// use 0666 to replace info.Mode() if you prefer
-
-	if err != nil {
-		fmt.Println(err)
+	if sourcedir == "" {
+		fmt.Println("Usage : gotar destinationfile.tar.gz source-directory")
 		os.Exit(1)
 	}
 
-	fmt.Printf("%s compressed to %s\n", filename, filename+".gz")
-	return true
+	dir, err := os.Open(sourcedir)
+
+	checkerror(err)
+
+	defer dir.Close()
+
+	files, err := dir.Readdir(0) // grab the files list
+
+	checkerror(err)
+
+	tarfile, err := os.Create(destinationfile)
+
+	checkerror(err)
+
+	defer tarfile.Close()
+	var fileWriter io.WriteCloser = tarfile
+
+	if strings.HasSuffix(destinationfile, ".gz") {
+		fileWriter = gzip.NewWriter(tarfile) // add a gzip filter
+		defer fileWriter.Close()             // if user add .gz in the destination filename
+	}
+
+	tarfileWriter := tar.NewWriter(fileWriter)
+	defer tarfileWriter.Close()
+
+	for _, fileInfo := range files {
+		fmt.Println("d" + dir.Name())
+		if fileInfo.IsDir() {
+			fmt.Println(fileInfo.Name())
+			continue
+		}
+
+		file, err := os.Open(nombre.Nombre + string(filepath.Separator) + fileInfo.Name())
+
+		checkerror(err)
+
+		defer file.Close()
+
+		// prepare the tar header
+
+		header := new(tar.Header)
+		header.Name = file.Name()
+		header.Size = fileInfo.Size()
+		header.Mode = int64(fileInfo.Mode())
+		header.ModTime = fileInfo.ModTime()
+
+		err = tarfileWriter.WriteHeader(header)
+
+		checkerror(err)
+
+		_, err = io.Copy(tarfileWriter, file)
+
+		checkerror(err)
+	}
+
 }
 
 func Comprobar(mensaje Msg) bool {
@@ -264,6 +301,8 @@ func Comprobar(mensaje Msg) bool {
 		comprobar = ComprobarTipo(mensaje)
 	case "delete":
 		comprobar = ComprobarTipo(mensaje)
+	case "Salir":
+		//comprobar = ComprobarTipo(mensaje)
 	default:
 		fmt.Println("Comando incorrecto por favor introduzca up/down")
 		comprobar = false

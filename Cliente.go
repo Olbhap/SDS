@@ -151,12 +151,14 @@ func client(c string) {
 		keyscan.Scan()
 		result := strings.Split(keyscan.Text(), " ")
 		fmt.Println(result)
-		fmt.Println(result[0])
-		fmt.Println(result[1])
-		fmt.Println(result[2])
-		if len(result) > 1 {
-			je.Encode(&Msg{Usuario: c, Comando: result[0], Tipo: result[1], Nombre: result[2]})
 
+		if len(result) >= 1 {
+			if result[0] != "Salir" {
+				je.Encode(&Msg{Usuario: c, Comando: result[0], Tipo: result[1], Nombre: result[2]})
+			} else {
+				fmt.Println("entra")
+				je.Encode(&Msg{Usuario: c, Comando: "Salir", Tipo: "", Nombre: ""})
+			}
 			var m Msg
 			jd.Decode(&m)
 			fmt.Println(m)
