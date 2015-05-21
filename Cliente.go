@@ -83,6 +83,7 @@ type Msg struct {
 	Comando string
 	Tipo    string
 	Nombre  string
+	Destino string
 }
 
 func client(c string) {
@@ -140,41 +141,41 @@ func client(c string) {
 	// redefinimos los encoder/decoder JSON para que trabajen sobre la conexión cifrada con AES
 	je = json.NewEncoder(aeswr)
 	jd = json.NewDecoder(aesrd)
-	fmt.Println("Introduzca Comando up/down Tipo f(ficheros)/d(directorios) Nombre fichero/directorio")
-	fmt.Println("Ejemplo : up f ejemplo.txt")
+	fmt.Println("Introduzca Comando [up/down] Tipo [f(ficheros)/d(directorios)] Nombre fichero/directorio Ruta")
+	//fmt.Println("Ejemplo : up f ejemplo.txt")
 	keyscan := bufio.NewScanner(os.Stdin) // scanner para la entrada estándar (teclado)
 
 	leemos := true
 	for leemos == true { // escaneamos la entrada
 
-		fmt.Println("Ejemplo : up f ejemplo.txt")
+		fmt.Println("Ejemplo : up f ejemplo.txt | up f ejemplo.txt carpeta/p1 | down d carpeta | delete f ejemplo.txt | Salir  ")
 		keyscan.Scan()
 		result := strings.Split(keyscan.Text(), " ")
 		fmt.Println(result)
 
 		if len(result) >= 1 {
-			if result[0] != "Salir" {
-				je.Encode(&Msg{Usuario: c, Comando: result[0], Tipo: result[1], Nombre: result[2]})
+			if len(result) == 3 {
+				je.Encode(&Msg{Usuario: c, Comando: result[0], Tipo: result[1], Nombre: result[2], Destino: ""})
+			} else if len(result) == 4 {
+
+				je.Encode(&Msg{Usuario: c, Comando: result[0], Tipo: result[1], Nombre: result[2], Destino: result[3]})
 			} else {
-				fmt.Println("entra")
-				je.Encode(&Msg{Usuario: c, Comando: "Salir", Tipo: "", Nombre: ""})
+				if result[0] == "Salir" {
+					je.Encode(&Msg{Usuario: c, Comando: "Salir", Tipo: "", Nombre: ""})
+				} else {
+					je.Encode(&Msg{Usuario: c, Comando: result[0], Tipo: "", Nombre: ""})
+				}
 			}
 			var m Msg
 			jd.Decode(&m)
 			fmt.Println(m)
-
-			je.Encode(&Msg{Usuario: c, Comando: "", Tipo: "t", Nombre: ""})
+			je.Encode(&Msg{Usuario: c, Comando: "", Tipo: "", Nombre: ""})
 			jd.Decode(&m)
-			fmt.Println(m.Usuario)
+			//fmt.Print(m.Usuario)
+			//fmt.Println(m.Comando)
 		} else {
 			leemos = true
 		}
 
 	}
-
-	// envíamos un mensaje de HELLO (ejemplo)
-	//je.Encode(&Msg{Id: "Cliente", Arg: nil})
-
-	// leemos el mensaje de HELLO del servidor y lo imprimimos
-
 }
