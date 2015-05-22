@@ -40,24 +40,6 @@ func chk(e error) {
 	}
 }
 
-/*
-fmt.Println("pub.go :: un ejemplo de clave pública en Go.")
-	s := "Introduce srv para funcionalidad de servidor y cli para funcionalidad de cliente"
-	if len(os.Args) > 1 {
-		switch os.Args[1] {
-		case "srv":
-			fmt.Println("Entrando en modo servidor...")
-			server()
-		case "cli":
-			fmt.Println("Entrando en modo cliente...")
-			client()
-		default:
-			fmt.Println("Parámetro '", os.Args[1], "' desconocido. ", s)
-		}
-	} else {
-		fmt.Println(s)
-	}
-*/
 func main() {
 
 	fmt.Println("Bienvenido Cliente de clave pública en Go.")
@@ -73,11 +55,6 @@ func main() {
 
 }
 
-// Mensaje genérico con un identificador y un argumento asociado
-/*type Msg struct {
-	Id  string
-	Arg interface{}
-}*/
 type Msg struct {
 	Usuario string
 	Comando string
@@ -142,28 +119,53 @@ func client(c string) {
 	je = json.NewEncoder(aeswr)
 	jd = json.NewDecoder(aesrd)
 	fmt.Println("Introduzca Comando [up/down] Tipo [f(ficheros)/d(directorios)] Nombre fichero/directorio Ruta")
-	//fmt.Println("Ejemplo : up f ejemplo.txt")
+	fmt.Println("Ejemplo : up f ejemplo.txt | up f ejemplo.txt carpeta/p1 | down d carpeta | delete f ejemplo.txt | Salir  ")
+
 	keyscan := bufio.NewScanner(os.Stdin) // scanner para la entrada estándar (teclado)
+
+	//Modificar clave para que no sea siempre la misma
+	key := "opensesame123456" // 16 bytes!
+
+	block, err := aes.NewCipher([]byte(key))
+
+	if err != nil {
+		panic(err)
+	}
+
+	str := []byte(c)
+
+	// 16 bytes for AES-128, 24 bytes for AES-192, 32 bytes for AES-256
+	ciphertext := []byte("abcdef1234567890")
+	iv := ciphertext[:aes.BlockSize] // const BlockSize = 16
+
+	// encrypt
+
+	encrypter := cipher.NewCFBEncrypter(block, iv)
+
+	encrypted := make([]byte, len(str))
+	encrypter.XORKeyStream(encrypted, str)
+	//fmt.Printf("%s encrypted to %v\n", str, encrypted)
 
 	leemos := true
 	for leemos == true { // escaneamos la entrada
 
-		fmt.Println("Ejemplo : up f ejemplo.txt | up f ejemplo.txt carpeta/p1 | down d carpeta | delete f ejemplo.txt | Salir  ")
+		fmt.Println("Introduce Comando : ")
 		keyscan.Scan()
 		result := strings.Split(keyscan.Text(), " ")
 		fmt.Println(result)
 
 		if len(result) >= 1 {
 			if len(result) == 3 {
-				je.Encode(&Msg{Usuario: c, Comando: result[0], Tipo: result[1], Nombre: result[2], Destino: ""})
+				je.Encode(&Msg{Usuario: string(encrypted), Comando: result[0], Tipo: result[1], Nombre: result[2], Destino: ""})
 			} else if len(result) == 4 {
 
-				je.Encode(&Msg{Usuario: c, Comando: result[0], Tipo: result[1], Nombre: result[2], Destino: result[3]})
+				je.Encode(&Msg{Usuario: string(encrypted), Comando: result[0], Tipo: result[1], Nombre: result[2], Destino: result[3]})
 			} else {
 				if result[0] == "Salir" {
-					je.Encode(&Msg{Usuario: c, Comando: "Salir", Tipo: "", Nombre: ""})
+					je.Encode(&Msg{Usuario: string(encrypted), Comando: "Salir", Tipo: "", Nombre: ""})
+					break
 				} else {
-					je.Encode(&Msg{Usuario: c, Comando: result[0], Tipo: "", Nombre: ""})
+					je.Encode(&Msg{Usuario: string(encrypted), Comando: result[0], Tipo: "", Nombre: ""})
 				}
 			}
 			var m Msg
@@ -171,8 +173,7 @@ func client(c string) {
 			fmt.Println(m)
 			je.Encode(&Msg{Usuario: c, Comando: "", Tipo: "", Nombre: ""})
 			jd.Decode(&m)
-			//fmt.Print(m.Usuario)
-			//fmt.Println(m.Comando)
+
 		} else {
 			leemos = true
 		}
