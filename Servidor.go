@@ -74,12 +74,6 @@ func listar() {
 	}
 }
 
-func listar() {
-	files, _ := ioutil.ReadDir("./")
-	for _, f := range files {
-		fmt.Println(f.Name())
-	}
-}
 
 // gestiona el modo servidor
 func server() {
@@ -146,17 +140,7 @@ func server() {
 			je = json.NewEncoder(aeswr)
 			jd = json.NewDecoder(aesrd)
 			var i string = ""
-<<<<<<< HEAD
-			for i != "Salir" {
-				// envíamos un mensaje de HELLO (ejemplo)
-				je.Encode(&Msg{Usuario: "Servidor", Comando: "", Tipo: "t", Nombre: "./ej"})
 
-				// leemos el mensaje de HELLO del cliente y lo imprimimos
-				var m Msg
-				jd.Decode(&m)
-				fmt.Println(m)
-				i = m.Nombre
-=======
 			var cont int = 0
 			var cliente_msg string = ""
 			for i != "Salir" {
@@ -165,7 +149,7 @@ func server() {
 				jd.Decode(&m)
 				fmt.Println(m)
 				i = m.Comando
->>>>>>> origin/melani
+
 				if Comprobar(m) == true {
 					cont = 0
 					cliente_msg = ""
@@ -179,21 +163,7 @@ func server() {
 
 							}
 						}
-<<<<<<< HEAD
 
-						err = os.MkdirAll("servidor/"+m.Usuario+"/", sourceinfo.Mode())
-						if err != nil {
-							fmt.Println(err)
-
-						}
-
-						//CopyDir(m.Nombre, "servidor/"+m.Usuario+"/"+m.Nombre)
-						listar()
-						CopyFile(m.Nombre, "servidor/"+m.Usuario+"/"+m.Nombre)
-					} else {
-						listar()
-						CopyDir(m.Nombre, "servidor/"+m.Usuario+"/"+m.Nombre)
-=======
 						listar()
 						if m.Comando == "up" {
 							if m.Destino == "" {
@@ -250,7 +220,7 @@ func server() {
 					fmt.Println("entra")
 					if cont == 3 {
 						break
->>>>>>> origin/melani
+
 					}
 				}
 				je.Encode(&Msg{Usuario: "Servidor ", Comando: cliente_msg, Tipo: "", Nombre: ""})
@@ -397,11 +367,9 @@ func CopyFile(source string, dest string) (err error) {
 	fmt.Println("Copiando fichero...")
 	sourcefile, err := os.Open(source)
 	if err != nil {
-<<<<<<< HEAD
-		fmt.Print("1 ")
-=======
+
 		//fmt.Print("1 ")
->>>>>>> origin/melani
+
 		fmt.Println(err)
 		return err
 	}
@@ -410,11 +378,9 @@ func CopyFile(source string, dest string) (err error) {
 
 	destfile, err := os.Create(dest)
 	if err != nil {
-<<<<<<< HEAD
-		fmt.Print("2 ")
-=======
+
 		//fmt.Print("2 ")
->>>>>>> origin/melani
+
 		fmt.Println(err)
 		return err
 	}
@@ -427,11 +393,9 @@ func CopyFile(source string, dest string) (err error) {
 		if err != nil {
 
 			err = os.Chmod(dest, sourceinfo.Mode())
-<<<<<<< HEAD
-			fmt.Print("3 ")
-=======
+
 			//fmt.Print("3 ")
->>>>>>> origin/melani
+
 			fmt.Println(err)
 		}
 

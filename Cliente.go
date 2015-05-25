@@ -123,30 +123,7 @@ func client(c string) {
 
 	keyscan := bufio.NewScanner(os.Stdin) // scanner para la entrada estándar (teclado)
 
-<<<<<<< HEAD
-	leemos := true
-	for leemos == true { // escaneamos la entrada
 
-		fmt.Println("Ejemplo : up f ejemplo.txt")
-		keyscan.Scan()
-		result := strings.Split(keyscan.Text(), " ")
-		fmt.Println(result)
-
-		if len(result) > 1 {
-			je.Encode(&Msg{Usuario: c, Comando: result[0], Tipo: result[1], Nombre: result[2]})
-
-			var m Msg
-			jd.Decode(&m)
-			fmt.Println(m)
-
-			je.Encode(&Msg{Usuario: c, Comando: "", Tipo: "t", Nombre: ""})
-			jd.Decode(&m)
-			fmt.Println(m.Usuario)
-		} else {
-			leemos = true
-		}
-
-=======
 	//Modificar clave para que no sea siempre la misma
 	key := "opensesame123456" // 16 bytes!
 
@@ -154,7 +131,6 @@ func client(c string) {
 
 	if err != nil {
 		panic(err)
->>>>>>> origin/melani
 	}
 
 	str := []byte(c)
