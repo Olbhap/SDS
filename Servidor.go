@@ -146,11 +146,16 @@ func server() {
 			for i != "Salir" {
 				je.Encode(&Msg{Usuario: "Servidor", Comando: cliente_msg, Tipo: "", Nombre: ""})
 				var m Msg
+				
 				jd.Decode(&m)
-				fmt.Println(m)
+				
+				
 				i = m.Comando
+				
 
 				if Comprobar(m) == true {
+					
+					
 					cont = 0
 					cliente_msg = ""
 					if m.Tipo == "f" {
@@ -166,12 +171,14 @@ func server() {
 
 						listar()
 						if m.Comando == "up" {
+							
 							if m.Destino == "" {
 								CopyFile(m.Nombre, "servidor/"+m.Usuario+"/"+m.Nombre)
 							} else {
 								CopyFile(m.Destino+"/"+m.Nombre, "servidor/"+m.Usuario+"/"+m.Nombre)
 							}
 						} else if m.Comando == "delete" {
+							
 							if m.Destino == "" {
 								os.Remove("servidor/" + m.Usuario + "/" + m.Nombre)
 							} else {
@@ -179,10 +186,14 @@ func server() {
 							}
 
 						} else if m.Comando == "down" {
+							
 							if m.Destino == "" {
-								CopyFile("servidor/"+m.Usuario+"/"+m.Nombre, "Cliente/"+m.Nombre)
+																
+								
+								
+								CopyFile("servidor/" + m.Usuario + "/" + m.Nombre, "Cliente/"+m.Nombre)
 							} else {
-								CopyFile("servidor/"+m.Usuario+"/"+m.Destino+"/"+m.Nombre, "Cliente/"+m.Nombre)
+								CopyFile("servidor/"+m.Destino+"/"+m.Nombre, "Cliente/"+m.Usuario+"/"+m.Nombre)
 							}
 						}
 
@@ -204,7 +215,10 @@ func server() {
 
 						} else if m.Comando == "down" {
 							if m.Destino == "" {
+								
 								comprimir(m)
+								fmt.Println("Nombre Carpeta:")
+								fmt.Println(m.Usuario)
 								CopyFile("servidor/"+m.Usuario+"/"+m.Nombre+".tar.gz", "Cliente/"+m.Nombre+".tar.gz")
 								os.Remove("servidor/" + m.Usuario + "/" + m.Nombre + ".tar.gz")
 							} else {
@@ -368,8 +382,8 @@ func CopyFile(source string, dest string) (err error) {
 	sourcefile, err := os.Open(source)
 	if err != nil {
 
-		//fmt.Print("1 ")
-
+		fmt.Print("Error en el ORIGEN del fichero: ")
+		
 		fmt.Println(err)
 		return err
 	}
@@ -379,7 +393,7 @@ func CopyFile(source string, dest string) (err error) {
 	destfile, err := os.Create(dest)
 	if err != nil {
 
-		//fmt.Print("2 ")
+		fmt.Print("Error en el DESTINO del fichero: "+ dest)
 
 		fmt.Println(err)
 		return err
