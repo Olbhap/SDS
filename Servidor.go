@@ -65,6 +65,7 @@ type Msg struct {
 	Tipo    string
 	Nombre  string
 	Destino string
+	Datos   []byte
 }
 
 func listar() {
@@ -73,7 +74,6 @@ func listar() {
 		fmt.Println(f.Name())
 	}
 }
-
 
 // gestiona el modo servidor
 func server() {
@@ -144,7 +144,8 @@ func server() {
 			var cont int = 0
 			var cliente_msg string = ""
 			for i != "Salir" {
-				je.Encode(&Msg{Usuario: "Servidor", Comando: cliente_msg, Tipo: "", Nombre: ""})
+				var d []byte
+				//je.Encode(&Msg{Usuario: "Servidor", Comando: cliente_msg, Tipo: "casa", Nombre: "pata"})
 				var m Msg
 				jd.Decode(&m)
 				fmt.Println(m)
@@ -166,27 +167,33 @@ func server() {
 
 						listar()
 						if m.Comando == "up" {
-							if m.Destino == "" {
+							/*if m.Destino == "" {
 								CopyFile(m.Nombre, "servidor/"+m.Usuario+"/"+m.Nombre)
 							} else {
 								CopyFile(m.Destino+"/"+m.Nombre, "servidor/"+m.Usuario+"/"+m.Nombre)
-							}
+							}*/
+							os.Create("servidor/" + m.Usuario + "/" + m.Nombre)
+							ioutil.WriteFile("servidor/"+m.Usuario+"/"+m.Nombre, m.Datos, 0777)
+							//je.Encode(&Msg{Usuario: "Servidor", Comando: cliente_msg, Tipo: "casa", Nombre: "pata"})
 						} else if m.Comando == "delete" {
 							if m.Destino == "" {
 								os.Remove("servidor/" + m.Usuario + "/" + m.Nombre)
 							} else {
 								os.Remove("servidor/" + m.Usuario + "/" + m.Destino + "/" + m.Nombre)
 							}
+							//je.Encode(&Msg{Usuario: "Servidor", Comando: cliente_msg, Tipo: "casa", Nombre: "pata"})
 
 						} else if m.Comando == "down" {
-							if m.Destino == "" {
+							/*if m.Destino == "" {
 								CopyFile("servidor/"+m.Usuario+"/"+m.Nombre, "Cliente/"+m.Nombre)
 							} else {
 								CopyFile("servidor/"+m.Usuario+"/"+m.Destino+"/"+m.Nombre, "Cliente/"+m.Nombre)
-							}
+							}*/
+							e, _ := ioutil.ReadFile("servidor/" + m.Usuario + "/" + m.Nombre)
+							d = e
 						}
-
-					} else if m.Tipo == "d" {
+						je.Encode(&Msg{Usuario: "Servidor", Comando: m.Comando, Tipo: cliente_msg, Nombre: m.Nombre, Datos: d})
+					} /*else if m.Tipo == "d" {
 						listar()
 						if m.Comando == "up" {
 							if m.Destino == "" {
@@ -213,7 +220,7 @@ func server() {
 								os.Remove("servidor/" + m.Usuario + "/" + m.Destino + "/" + m.Nombre + ".tar.gz")
 							}
 						}
-					}
+					}*/
 				} else {
 					cont = cont + 1
 					cliente_msg = "Comando o Tipo incorrecto por favor introduzca Comando [up/down/delete/Salir]  o  Tipo[f/d]"
@@ -223,7 +230,7 @@ func server() {
 
 					}
 				}
-				je.Encode(&Msg{Usuario: "Servidor ", Comando: cliente_msg, Tipo: "", Nombre: ""})
+				je.Encode(&Msg{Usuario: "Servidor ", Comando: cliente_msg, Tipo: "uno", Nombre: "dos"})
 				jd.Decode(&m)
 				fmt.Println(m.Usuario)
 			}
