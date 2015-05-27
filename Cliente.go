@@ -43,16 +43,33 @@ func chk(e error) {
 func main() {
 
 	fmt.Println("Bienvenido Cliente de clave pública en Go.")
-	if len(os.Args) > 1 {
-		client(os.Args[1])
+	if len(os.Args) > 2 {
+		client(os.Args[1], os.Args[2])
 	} else {
-		reader := bufio.NewReader(os.Stdin)
+		/*reader := bufio.NewReader(os.Stdin)
 		fmt.Println("Introduzca Usuario")
 		cliente, _ := reader.ReadString('\n')
-		client(cliente)
-
+		client(cliente)*/
+		menu()
 	}
+}
 
+func menu() {
+	scanner := bufio.NewScanner(os.Stdin)
+
+	fmt.Println("Introduce tu usuario: ")
+	scanner.Scan()
+	cliente := scanner.Text()
+
+	fmt.Println("Introduce tu contraseña: ")
+	scanner.Scan()
+	password := scanner.Text()
+	client(cliente, password)
+}
+
+type User struct {
+	Name string
+	Pass string
 }
 
 type Msg struct {
@@ -64,7 +81,7 @@ type Msg struct {
 	Datos   []byte
 }
 
-func client(c string) {
+func client(c string, p string) {
 
 	cli_keys, err := rsa.GenerateKey(rand.Reader, 1024) // generamos un par de claves (privada, pública) para el servidor
 	chk(err)
@@ -125,7 +142,7 @@ func client(c string) {
 	keyscan := bufio.NewScanner(os.Stdin) // scanner para la entrada estándar (teclado)
 
 	//Modificar clave para que no sea siempre la misma
-	key := "opensesame123456" // 16 bytes!
+	/*key := "opensesame123456" // 16 bytes!
 
 	block, err := aes.NewCipher([]byte(key))
 
@@ -145,90 +162,100 @@ func client(c string) {
 
 	encrypted := make([]byte, len(str))
 	encrypter.XORKeyStream(encrypted, str)
-	//fmt.Printf("%s encrypted to %v\n", str, encrypted)
+	//fmt.Printf("%s encrypted to %v\n", str, encrypted)*/
+
+	je.Encode(&User{Name: c, Pass: p})
+	var u User
+	jd.Decode(&u)
+	fmt.Println(u)
 
 	leemos := true
-	for leemos == true { // escaneamos la entrada
+	if u.Pass == "Ok" {
+		for leemos == true { // escaneamos la entrada
 
-		fmt.Println("Introduce Comando : ")
-		keyscan.Scan()
-		result := strings.Split(keyscan.Text(), " ")
+			fmt.Println("Introduce Comando : ")
+			keyscan.Scan()
+			result := strings.Split(keyscan.Text(), " ")
 
-		fmt.Println(result)
+			fmt.Println(result)
 
-		if len(result) >= 1 {
-			if len(result) == 3 || len(result) == 4 {
-				var d []byte
-				if len(result) == 3 {
-					d, _ = ioutil.ReadFile(result[2])
+			if len(result) >= 1 {
+				if len(result) == 3 || len(result) == 4 {
+					var d []byte
+					if len(result) == 3 {
+						d, _ = ioutil.ReadFile(result[2])
 
+					} else {
+						d, _ = ioutil.ReadFile(result[3] + "/" + result[2])
+					}
+
+					//Modificar clave para que no sea siempre la misma
+					key := "opensesame123456" // 16 bytes!
+
+					block, err := aes.NewCipher([]byte(key))
+
+					if err != nil {
+						panic(err)
+					}
+
+					str := []byte(d)
+
+					// 16 bytes for AES-128, 24 bytes for AES-192, 32 bytes for AES-256
+					ciphertext := []byte("abcdef1234567890")
+					iv := ciphertext[:aes.BlockSize] // const BlockSize = 16
+
+					// encrypt
+
+					encrypter := cipher.NewCFBEncrypter(block, iv)
+
+					encrypted := make([]byte, len(str))
+					encrypter.XORKeyStream(encrypted, str)
+					je.Encode(&Msg{Usuario: c, Comando: result[0], Tipo: result[1], Nombre: result[2], Destino: "", Datos: encrypted})
+					/*} else if len(result) == 4 {
+
+																																										je.Encode(&Msg{Usuario: c, Comando: result[0], Tipo: result[1], Nombre: result[2], Destino: result[3]})*/
 				} else {
-					d, _ = ioutil.ReadFile(result[3] + "/" + result[2])
+					if result[0] == "Salir" {
+						je.Encode(&Msg{Usuario: c, Comando: "Salir", Tipo: "", Nombre: ""})
+						break
+					} else {
+						je.Encode(&Msg{Usuario: c, Comando: result[0], Tipo: "", Nombre: ""})
+					}
 				}
+				var m Msg
+				jd.Decode(&m)
+				if m.Comando == "down" {
+					key := "opensesame123456" // 16 bytes!
 
-				//Modificar clave para que no sea siempre la misma
-				key := "opensesame123456" // 16 bytes!
+					block, err := aes.NewCipher([]byte(key))
 
-				block, err := aes.NewCipher([]byte(key))
+					if err != nil {
+						panic(err)
+					}
+					str := []byte(m.Datos)
 
-				if err != nil {
-					panic(err)
+					//str := m.Datos
+					// 16 bytes for AES-128, 24 bytes for AES-192, 32 bytes for AES-256
+					ciphertext := []byte("abcdef1234567890")
+					iv := ciphertext[:aes.BlockSize]               // const BlockSize = 16
+					decrypter := cipher.NewCFBDecrypter(block, iv) // simple!
+
+					decrypted := make([]byte, len(str))
+					decrypter.XORKeyStream(decrypted, str)
+					os.Create("Cliente/" + m.Nombre)
+					ioutil.WriteFile("Cliente/"+m.Nombre, decrypted, 0777)
 				}
+				fmt.Println(m)
+				je.Encode(&Msg{Usuario: c, Comando: "", Tipo: "", Nombre: ""})
+				jd.Decode(&m)
 
-				str := []byte(d)
-
-				// 16 bytes for AES-128, 24 bytes for AES-192, 32 bytes for AES-256
-				ciphertext := []byte("abcdef1234567890")
-				iv := ciphertext[:aes.BlockSize] // const BlockSize = 16
-
-				// encrypt
-
-				encrypter := cipher.NewCFBEncrypter(block, iv)
-
-				encrypted := make([]byte, len(str))
-				encrypter.XORKeyStream(encrypted, str)
-				je.Encode(&Msg{Usuario: c, Comando: result[0], Tipo: result[1], Nombre: result[2], Destino: "", Datos: encrypted})
-				/*} else if len(result) == 4 {
-
-																je.Encode(&Msg{Usuario: c, Comando: result[0], Tipo: result[1], Nombre: result[2], Destino: result[3]})*/
 			} else {
-				if result[0] == "Salir" {
-					je.Encode(&Msg{Usuario: c, Comando: "Salir", Tipo: "", Nombre: ""})
-					break
-				} else {
-					je.Encode(&Msg{Usuario: c, Comando: result[0], Tipo: "", Nombre: ""})
-				}
+				leemos = true
 			}
-			var m Msg
-			jd.Decode(&m)
-			if m.Comando == "down" {
-				key := "opensesame123456" // 16 bytes!
 
-				block, err := aes.NewCipher([]byte(key))
-
-				if err != nil {
-					panic(err)
-				}
-				str := []byte(m.Datos)
-
-				//str := m.Datos
-				// 16 bytes for AES-128, 24 bytes for AES-192, 32 bytes for AES-256
-				ciphertext := []byte("abcdef1234567890")
-				iv := ciphertext[:aes.BlockSize]               // const BlockSize = 16
-				decrypter := cipher.NewCFBDecrypter(block, iv) // simple!
-
-				decrypted := make([]byte, len(str))
-				decrypter.XORKeyStream(decrypted, str)
-				os.Create("Cliente/" + m.Nombre)
-				ioutil.WriteFile("Cliente/"+m.Nombre, decrypted, 0777)
-			}
-			fmt.Println(m)
-			je.Encode(&Msg{Usuario: c, Comando: "", Tipo: "", Nombre: ""})
-			jd.Decode(&m)
-
-		} else {
-			leemos = true
 		}
-
+	} else if u.Pass == "No" {
+		fmt.Println("Usuario o contraseña incorrecto")
+		menu()
 	}
 }

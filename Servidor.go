@@ -20,7 +20,7 @@ package main
 import (
 	//"bufio"
 	"archive/tar"
-	//"bufio"
+	"bufio"
 	//"compress/gzip"
 	//"compress/flate"
 	//"bytes"
@@ -66,6 +66,11 @@ type Msg struct {
 	Nombre  string
 	Destino string
 	Datos   []byte
+}
+
+type User struct {
+	Name string
+	Pass string
 }
 
 func listar() {
@@ -143,6 +148,47 @@ func server() {
 
 			var cont int = 0
 			var cliente_msg string = ""
+
+			var u User
+			jd.Decode(&u)
+			fmt.Println(u)
+			var existeuser bool = false
+
+			if _, err := os.Stat("servidor/user.txt"); os.IsNotExist(err) {
+				os.Create("servidor/user.txt")
+			}
+			file, err := os.Open("servidor/user.txt")
+
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
+
+			defer file.Close()
+
+			reader := bufio.NewReader(file)
+			scanner := bufio.NewScanner(reader)
+
+			for scanner.Scan() {
+				result := strings.Split(scanner.Text(), " ")
+				fmt.Println(result[1])
+				if u.Name == result[0] && u.Pass == result[1] {
+					existeuser = true
+
+					fmt.Println("existe")
+					break
+				}
+
+			}
+
+			if existeuser == true {
+				je.Encode(&User{Name: "Servidor", Pass: "Ok"})
+
+			} else {
+				je.Encode(&User{Name: "Servidor", Pass: "No"})
+
+			}
+
 			for i != "Salir" {
 				var d []byte
 				//je.Encode(&Msg{Usuario: "Servidor", Comando: cliente_msg, Tipo: "casa", Nombre: "pata"})
