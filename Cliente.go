@@ -180,6 +180,7 @@ func client(c string, p string) {
 			fmt.Println(result)
 
 			if len(result) >= 1 {
+				if(result[0]=="Salir" || result[0] == "down" || result[0]=="up" || result[0]=="delete"){
 				if len(result) == 3 || len(result) == 4 {
 					var d []byte
 					if len(result) == 3 {
@@ -248,7 +249,9 @@ func client(c string, p string) {
 				fmt.Println(m)
 				je.Encode(&Msg{Usuario: c, Comando: "", Tipo: "", Nombre: ""})
 				jd.Decode(&m)
-
+				}else{
+				fmt.Println("comando incorrecto")	
+				}
 			} else {
 				leemos = true
 			}

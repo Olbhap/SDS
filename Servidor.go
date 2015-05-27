@@ -155,8 +155,13 @@ func server() {
 			var existeuser bool = false
 
 			if _, err := os.Stat("servidor/user.txt"); os.IsNotExist(err) {
+				os.Mkdir("servidor/",0777)
 				os.Create("servidor/user.txt")
+				ejemplo := []byte ("admin 1234 \n")
+				ioutil.WriteFile("servidor/user.txt",ejemplo,0644)
+				//os.w
 			}
+
 			file, err := os.Open("servidor/user.txt")
 
 			if err != nil {
@@ -201,14 +206,23 @@ func server() {
 					cont = 0
 					cliente_msg = ""
 					if m.Tipo == "f" {
-						sourceinfo, err := os.Stat(m.Nombre)
+						/*fmt.Println("mtrr2")
+						sourceinfo, err := os.Stat("servidor/"+m.Usuario)
+						fmt.Println("mtrr")
 						if err == nil {
+							fmt.Println("rr")
 							err = os.MkdirAll("servidor/"+m.Usuario, sourceinfo.Mode())
 							err = os.MkdirAll("Cliente/", sourceinfo.Mode())
 							if err != nil {
 								fmt.Println(err)
 
 							}
+						}*/
+						if _, err := os.Stat("servidor/"+m.Usuario); os.IsNotExist(err) {
+							//fmt.Println("<eentra")
+							os.Mkdir("servidor/"+m.Usuario+"/",0777)
+							os.Mkdir("Cliente/",0777)
+							//os.Create("servidor/user.txt")
 						}
 
 						listar()
