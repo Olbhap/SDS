@@ -7,12 +7,6 @@ en una arquitectura cliente servidor:
 
 El servidor es concurrente, siendo capaz de manejar múltiples clientes simultáneamente.
 
-ejemplos de uso:
-
-go run pub.go srv
-
-go run pub.go cli
-
 */
 
 package main
@@ -23,9 +17,11 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net"
 	"os"
 	"strings"
@@ -38,6 +34,10 @@ func chk(e error) {
 	}
 }
 
+const (
+	directory string = "servidor/"
+)
+
 func main() {
 
 	fmt.Println("Servidor de clave pública en Go.")
@@ -45,18 +45,21 @@ func main() {
 	server()
 }
 
-
 type Msg struct {
 	Usuario string
 	Comando string
 	Nombre  string
 	Destino string
 	Datos   []byte
+	Clave   []byte
 }
 
 type User struct {
-	Name string
-	Pass string
+	Name      string
+	Pass      string
+	Sal       []byte
+	Conectado string
+	Clave     []byte
 }
 
 func listar() {
@@ -64,6 +67,35 @@ func listar() {
 	for _, f := range files {
 		fmt.Println(f.Name())
 	}
+}
+
+func check(e error) {
+	if e != nil {
+		log.Fatal(e)
+	}
+}
+
+func createHash(sal []byte, pass []byte) []byte {
+
+	tmp := make([]byte, len(sal)+len(pass))
+
+	copy(tmp[:16], sal)
+	copy(tmp[16:], pass)
+
+	hasher := sha256.New()
+	hasher.Reset()
+	_, err := hasher.Write(tmp)
+	check(err)
+
+	resume := hasher.Sum(nil)
+
+	return resume
+}
+
+func MakeSal(sal *[]byte) {
+	*sal = make([]byte, 16)
+	_, err := rand.Read(*sal)
+	check(err)
 }
 
 // gestiona el modo servidor
@@ -130,24 +162,27 @@ func server() {
 			// redefinimos los encoder/decoder JSON para que trabajen sobre la conexión cifrada con AES
 			je = json.NewEncoder(aeswr)
 			jd = json.NewDecoder(aesrd)
-			
+
 			var i string = ""
 			var cont int = 0
 			var cliente_msg string = ""
 
 			var u User
 			jd.Decode(&u)
-			fmt.Println(u)
 			var existeuser bool = false
 
-			if _, err := os.Stat("servidor/user.txt"); os.IsNotExist(err) {
-				os.Mkdir("servidor/", 0777)
-				os.Create("servidor/user.txt")
-				ejemplo := []byte("admin 1234 \n")
-				ioutil.WriteFile("servidor/user.txt", ejemplo, 0644)
+			if _, err := os.Stat(directory + "user.txt"); os.IsNotExist(err) {
+				os.Mkdir(directory, 0777)
+				os.Create(directory + "user.txt")
+				var sal []byte
+				MakeSal(&sal)
+				hashpass := createHash(sal, []byte("1234"))
+				ejemplo := []byte("admin " + string(hashpass) + " " + string(sal) + "\n")
+				ioutil.WriteFile(directory+"user.txt", ejemplo, 0644)
+
 			}
 
-			file, err := os.Open("servidor/user.txt")
+			file, err := os.Open(directory + "user.txt")
 
 			if err != nil {
 				fmt.Println(err)
@@ -158,21 +193,25 @@ func server() {
 
 			reader := bufio.NewReader(file)
 			scanner := bufio.NewScanner(reader)
-
+			var password []byte
 			for scanner.Scan() {
 				result := strings.Split(scanner.Text(), " ")
-				fmt.Println(result[1])
-				if u.Name == result[0] && u.Pass == result[1] {
-					existeuser = true
-					break
+				if u.Name == result[0] {
+					hashpass := createHash([]byte(result[2]), []byte(u.Pass))
+					if string(hashpass) == result[1] {
+						existeuser = true
+						password = hashpass
+						break
+					}
+
 				}
 			}
 
 			if existeuser == true {
-				je.Encode(&User{Name: "Servidor", Pass: "Ok"})
+				je.Encode(&User{Name: "Servidor", Clave: password, Conectado: "Ok"})
 
 			} else {
-				je.Encode(&User{Name: "Servidor", Pass: "No"})
+				je.Encode(&User{Name: "Servidor", Conectado: "No"})
 			}
 
 			if existeuser == true {
@@ -180,41 +219,42 @@ func server() {
 					var d []byte
 					var m Msg
 					jd.Decode(&m)
-					fmt.Println(m)
 					i = m.Comando
 
 					if Comprobar(m) == true {
 						cont = 0
-						if _, err := os.Stat("servidor/" + m.Usuario); os.IsNotExist(err) {
-							os.Mkdir("servidor/"+m.Usuario+"/", 0777)
+						if _, err := os.Stat(directory + m.Usuario); os.IsNotExist(err) {
+							os.Mkdir(directory+m.Usuario+"/", 0777)
 							os.Mkdir("Cliente/", 0777)
 						}
 
 						listar()
 						if m.Comando == "up" {
-							os.Create("servidor/" + m.Usuario + "/" + m.Nombre)
-							ioutil.WriteFile("servidor/"+m.Usuario+"/"+m.Nombre, m.Datos, 0777)
+							os.Create(directory + m.Usuario + "/" + m.Nombre)
+							ioutil.WriteFile(directory+m.Usuario+"/"+m.Nombre, m.Datos, 0777)
 
 						} else if m.Comando == "delete" {
-							os.Remove("servidor/" + m.Usuario + "/" + m.Nombre)
+							os.Remove(directory + m.Usuario + "/" + m.Nombre)
 
 						} else if m.Comando == "down" {
-							e, _ := ioutil.ReadFile("servidor/" + m.Usuario + "/" + m.Nombre)
-							d = e
+							if _, err := os.Stat(directory + m.Usuario + "/" + m.Nombre); os.IsNotExist(err) {
+
+							} else {
+								e, _ := ioutil.ReadFile(directory + m.Usuario + "/" + m.Nombre)
+								d = e
+							}
 						}
 						je.Encode(&Msg{Usuario: "Servidor", Comando: m.Comando, Nombre: m.Nombre, Datos: d})
 
 					} else {
 						cont = cont + 1
 						cliente_msg = "Comando o Tipo incorrecto por favor introduzca Comando [up/down/delete/Salir]"
-						fmt.Println("entra")
 						if cont == 3 {
 							break
 						}
 					}
 					je.Encode(&Msg{Usuario: "Servidor ", Comando: cliente_msg, Nombre: "dos"})
 					jd.Decode(&m)
-					fmt.Println(m.Usuario)
 				}
 			}
 			conn.Close() // cerramos la conexión
@@ -232,17 +272,15 @@ func checkerror(err error) {
 	}
 }
 
-
-
 func Comprobar(mensaje Msg) bool {
 	var comprobar = true
 	switch mensaje.Comando {
 	case "up":
-		comprobar = true 
+		comprobar = true
 	case "down":
-		comprobar = true 
+		comprobar = true
 	case "delete":
-		comprobar = true 
+		comprobar = true
 	case "Salir":
 	default:
 		fmt.Println("Comando incorrecto por favor introduzca up/down/delete")

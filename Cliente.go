@@ -7,11 +7,6 @@ en una arquitectura cliente servidor:
 
 El servidor es concurrente, siendo capaz de manejar múltiples clientes simultáneamente.
 
-ejemplos de uso:
-
-go run pub.go srv
-
-go run pub.go cli
 
 */
 
@@ -26,9 +21,12 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
+	"log"
 	"net"
 	"os"
 )
@@ -64,8 +62,11 @@ func menu() {
 }
 
 type User struct {
-	Name string
-	Pass string
+	Name      string
+	Pass      string
+	Conectado string
+	Sal       []byte
+	Clave     []byte
 }
 
 type Msg struct {
@@ -74,6 +75,71 @@ type Msg struct {
 	Nombre  string
 	Destino string
 	Datos   []byte
+}
+
+func check(e error) {
+	if e != nil {
+		log.Fatal(e)
+	}
+}
+
+func Cipher(plain_text []byte, cipher_pass []byte) []byte {
+	block, err := aes.NewCipher(cipher_pass)
+	if err != nil {
+		panic(err)
+	}
+
+	ciphertext := make([]byte, aes.BlockSize+len(plain_text))
+	iv := ciphertext[:aes.BlockSize]
+
+	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
+		panic(err)
+	}
+
+	stream := cipher.NewCTR(block, iv)
+	stream.XORKeyStream(ciphertext[aes.BlockSize:], plain_text)
+
+	return ciphertext
+}
+
+/*
+Descifra una cadena. Devuelve la cadena descifrada.
+*/
+func Decipher(ciphertext []byte, cipher_pass []byte) []byte {
+
+	block, err := aes.NewCipher(cipher_pass)
+	if err != nil {
+		panic(err)
+	}
+
+	plain_text := make([]byte, len(ciphertext[aes.BlockSize:]))
+	stream := cipher.NewCTR(block, ciphertext[:aes.BlockSize])
+	stream.XORKeyStream(plain_text, ciphertext[aes.BlockSize:])
+
+	return plain_text
+}
+
+func createHash(sal []byte, pass []byte) []byte {
+
+	tmp := make([]byte, len(sal)+len(pass))
+
+	copy(tmp[:16], sal)
+	copy(tmp[16:], pass)
+
+	hasher := sha256.New()
+	hasher.Reset()
+	_, err := hasher.Write(tmp)
+	check(err)
+
+	resume := hasher.Sum(nil)
+
+	return resume
+}
+
+func MakeSal(sal *[]byte) {
+	*sal = make([]byte, 16)
+	_, err := rand.Read(*sal)
+	check(err)
 }
 
 func client(c string, p string) {
@@ -139,16 +205,14 @@ func client(c string, p string) {
 	je.Encode(&User{Name: c, Pass: p})
 	var u User
 	jd.Decode(&u)
-	fmt.Println(u)
 
 	leemos := true
-	if u.Pass == "Ok" {
+	if u.Conectado == "Ok" {
 		for leemos == true { // escaneamos la entrada
 
 			fmt.Println("Introduce Comando : ")
 			keyscan.Scan()
 			result := strings.Split(keyscan.Text(), " ")
-			fmt.Println(result)
 
 			if len(result) >= 1 && len(result) <= 3 {
 				if result[0] == "Salir" || result[0] == "down" || result[0] == "up" || result[0] == "delete" {
@@ -161,59 +225,30 @@ func client(c string, p string) {
 							} else {
 								d, _ = ioutil.ReadFile(result[2] + "/" + result[1])
 							}
+							clave := []byte(u.Clave)
+							fichero := Cipher(d, clave)
 
-							//Modificar clave para que no sea siempre la misma
-							key := "opensesame123456" // 16 bytes!
-
-							block, err := aes.NewCipher([]byte(key))
-
-							if err != nil {
-								panic(err)
-							}
-
-							str := []byte(d)
-
-							// 16 bytes for AES-128, 24 bytes for AES-192, 32 bytes for AES-256
-							ciphertext := []byte("abcdef1234567890")
-							iv := ciphertext[:aes.BlockSize] // const BlockSize = 16
-
-							// encrypt
-							encrypter := cipher.NewCFBEncrypter(block, iv)
-							encrypted := make([]byte, len(str))
-							encrypter.XORKeyStream(encrypted, str)
-
-							je.Encode(&Msg{Usuario: c, Comando: result[0], Nombre: result[1], Destino: "", Datos: encrypted})
+							je.Encode(&Msg{Usuario: c, Comando: result[0], Nombre: result[1], Destino: "", Datos: fichero})
 						} else {
 							je.Encode(&Msg{Usuario: c, Comando: result[0], Nombre: result[1], Destino: ""})
 						}
-
 					} else {
 						je.Encode(&Msg{Usuario: c, Comando: "Salir", Nombre: ""})
 						break
-
 					}
 					var m Msg
 					jd.Decode(&m)
 					if m.Comando == "down" {
-						key := "opensesame123456" // 16 bytes!
-
-						block, err := aes.NewCipher([]byte(key))
-
-						if err != nil {
-							panic(err)
+						clave := []byte(u.Clave)
+						if m.Datos != nil {
+							datos := Decipher(m.Datos, clave)
+							os.Create("Cliente/" + m.Nombre)
+							ioutil.WriteFile("Cliente/"+m.Nombre, datos, 0777)
+							fmt.Println("Descargado fichero")
+						} else {
+							fmt.Println("Fichero seleccionado no existe")
 						}
-						str := []byte(m.Datos)
-						// 16 bytes for AES-128, 24 bytes for AES-192, 32 bytes for AES-256
-						ciphertext := []byte("abcdef1234567890")
-						iv := ciphertext[:aes.BlockSize]               // const BlockSize = 16
-						decrypter := cipher.NewCFBDecrypter(block, iv) // simple!
-
-						decrypted := make([]byte, len(str))
-						decrypter.XORKeyStream(decrypted, str)
-						os.Create("Cliente/" + m.Nombre)
-						ioutil.WriteFile("Cliente/"+m.Nombre, decrypted, 0777)
 					}
-					fmt.Println(m)
 					je.Encode(&Msg{Usuario: c, Comando: "", Nombre: ""})
 					jd.Decode(&m)
 				} else {
@@ -224,8 +259,15 @@ func client(c string, p string) {
 			}
 
 		}
-	} else if u.Pass == "No" {
+	} else if u.Conectado == "No" {
+		keyscan := bufio.NewScanner(os.Stdin)
 		fmt.Println("Usuario o Contraseña Incorrecto")
-		menu()
+		fmt.Println("¿Desea Salir? s/n")
+		keyscan.Scan()
+		op := keyscan.Text()
+		if op != "s" {
+			menu()
+		}
+
 	}
 }
