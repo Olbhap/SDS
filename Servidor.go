@@ -12,7 +12,7 @@ El servidor es concurrente, siendo capaz de manejar múltiples clientes simultá
 package main
 
 import (
-	"bufio"
+	//"bufio"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
@@ -24,7 +24,7 @@ import (
 	"log"
 	"net"
 	"os"
-	"strings"
+	//"strings"
 )
 
 // función para comprobar errores (ahorra escritura)
@@ -60,6 +60,11 @@ type User struct {
 	Sal       []byte
 	Conectado string
 	Clave     []byte
+}
+
+type Pass struct {
+	Sal []byte `json:"sal"`
+	PasswordSal []byte `json:"passwordSal"`
 }
 
 func listar() {
@@ -171,16 +176,7 @@ func server() {
 			jd.Decode(&u)
 			var existeuser bool = false
 
-			if _, err := os.Stat(directory + "user.txt"); os.IsNotExist(err) {
-				os.Mkdir(directory, 0777)
-				os.Create(directory + "user.txt")
-				var sal []byte
-				MakeSal(&sal)
-				hashpass := createHash(sal, []byte("1234"))
-				ejemplo := []byte("admin " + string(hashpass) + " " + string(sal) + "\n")
-				ioutil.WriteFile(directory+"user.txt", ejemplo, 0644)
-
-			}
+			
 
 			file, err := os.Open(directory + "user.txt")
 
@@ -191,7 +187,7 @@ func server() {
 
 			defer file.Close()
 
-			reader := bufio.NewReader(file)
+			/*reader := bufio.NewReader(file)
 			scanner := bufio.NewScanner(reader)
 			var password []byte
 			for scanner.Scan() {
@@ -205,14 +201,21 @@ func server() {
 					}
 
 				}
+			}*/
+			passSaltGen := GetUser(u.Name, u.Pass)
+			if( passSaltGen != nil) {
+				existeuser = true			
+			}else {
+				existeuser = false
 			}
 
-			if existeuser == true {
-				je.Encode(&User{Name: "Servidor", Clave: password, Conectado: "Ok"})
-
-			} else {
+			if(existeuser) {
+				je.Encode(&User{Name: "Servidor", Clave: passSaltGen, Conectado: "Ok"})
+			}else {
 				je.Encode(&User{Name: "Servidor", Conectado: "No"})
 			}
+
+			
 
 			if existeuser == true {
 				for i != "Salir" {
@@ -262,6 +265,54 @@ func server() {
 
 		}()
 	}
+}
+
+
+func GetUser(user string, password string) []byte {
+	var warehouse map[string]Pass
+	if _, err := os.Stat(directory + "user.txt"); os.IsNotExist(err) {
+				/*os.Mkdir(directory, 0777)
+				os.Create(directory + "user.txt")
+				var sal []byte
+				MakeSal(&sal)
+				hashpass := createHash(sal, []byte("1234"))
+				ejemplo := []byte("admin " + string(hashpass) + " " + string(sal) + "\n")
+				ioutil.WriteFile(directory+"user.txt", ejemplo, 0644)*/
+				os.Mkdir(directory, 0777)
+				os.Create(directory + "user.txt")
+				warehouse = make(map[string]Pass)
+
+	}
+	
+	bytes, err := ioutil.ReadFile(directory + "user.txt")
+	if err != nil {
+		return nil
+	}
+	json.Unmarshal(bytes, &warehouse)
+	// Check if user exists
+	data := warehouse[user]
+	if data.Sal == nil {
+		return nil
+	}
+	// Get password+sal generated
+	var passSaltGen = createHash(data.Sal, []byte(password))
+	if string(passSaltGen) == string(data.PasswordSal) {
+		
+		return passSaltGen
+	} else {
+		
+		return nil
+	}
+}
+//Return password of specified user.
+func GetPassword(user string) []byte {
+	var warehouse map[string]Pass
+	bytes, err := ioutil.ReadFile(directory + "user.txt")
+	if err != nil {
+		log.Fatal("The file does not exist")
+	}
+	json.Unmarshal(bytes, &warehouse)
+	return warehouse[user].PasswordSal
 }
 
 func checkerror(err error) {

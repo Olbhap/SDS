@@ -31,6 +31,10 @@ import (
 	"os"
 )
 
+const (
+	directory string = "servidor/"
+)
+
 // función para comprobar errores (ahorra escritura)
 func chk(e error) {
 	if e != nil {
@@ -44,8 +48,79 @@ func main() {
 	if len(os.Args) > 2 {
 		client(os.Args[1], os.Args[2])
 	} else {
-		menu()
+		scanner := bufio.NewScanner(os.Stdin)
+		fmt.Println("Seleccione una opción: ")
+		fmt.Println(" [1] Registrar usuario")
+		fmt.Println(" [2] Login usuario")
+		fmt.Println(" [3] Salir")
+		scanner.Scan()
+		opcion := scanner.Text()
+		
+			switch opcion {
+				case "1": registrar()
+				case "2": menu()
+				case "3": break;
+				default: 
+					fmt.Println("Entrada incorrecta")
+					break;
+			}
+		
+
+		
+			
+		
 	}
+}
+
+
+type Pass struct {
+	Sal []byte `json:"sal"`
+	PasswordSal []byte `json:"passwordSal"`
+}
+
+func CreatePass(user string, password string) Pass {
+	if user == "" || password == "" {
+		log.Fatal("User/Password is null")
+	}
+	//pUser := new(Pass)
+	var pUser Pass
+	MakeSal(&pUser.Sal)
+	pUser.PasswordSal = createHash(pUser.Sal, []byte(password))
+	
+	return pUser
+}
+
+func StoreUser(user string, pass Pass) {
+	var warehouse map[string]Pass
+			if _, err := os.Stat(directory + "user.txt"); os.IsNotExist(err) {
+				os.Mkdir(directory, 0777)
+				os.Create(directory + "user.txt")
+				warehouse = make(map[string]Pass)
+			}
+	
+	bytes, err := ioutil.ReadFile(directory + "user.txt")
+	if err != nil {
+		fmt.Println("no es nil")
+		warehouse = make(map[string]Pass)
+	}
+	json.Unmarshal(bytes, &warehouse)
+	warehouse[user] = pass
+	bytes, err = json.Marshal(warehouse)
+	ioutil.WriteFile(directory + "user.txt", bytes, 0666)
+}
+
+
+func registrar() string {
+	scanner := bufio.NewScanner(os.Stdin)
+	fmt.Print("Introduce tu usuario: ")
+	scanner.Scan()
+	user := scanner.Text()
+	fmt.Print("Introduce tu contraseña: ")
+	scanner.Scan()
+	pass := scanner.Text()
+	passSt := CreatePass(user, pass)
+	StoreUser(user, passSt)
+	return user
 }
 
 func menu() {
