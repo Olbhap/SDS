@@ -200,19 +200,10 @@ func server() {
 			je = json.NewEncoder(aeswr)
 			jd = json.NewDecoder(aesrd)
 			
-			var meme Msg
-			jd.Decode(&meme)
 			
 			
-			if(meme.Comando=="nuevoUserCrear") {
-			  fmt.Println("Soy el servidor, creando nuevo usuario...")
-			  passSt := CreatePass(user, pass)
-			  StoreUser(user, passSt)
-			  je.Encode(&Msg{Usuario: "NADA", Comando: "nuevoUserOK", Nombre: "NADA", Destino: "NADA"})    
-			  
-			} else {
-			  je.Encode(&Msg{Usuario: "NADA", Comando: "nuevoUserNO", Nombre: "NADA", Destino: "NADA"})
-			}
+			
+			
 			
 
 			var i string = ""
@@ -221,6 +212,19 @@ func server() {
 
 			var u User
 			jd.Decode(&u)
+			
+			
+			var meme Msg
+			jd.Decode(&meme)
+			
+			
+			if(meme.Comando=="nuevoUserCrear") {
+			  fmt.Println("Creando nuevo usuario...")
+			  passSt := CreatePass(u.Name, u.Pass)
+			  StoreUser(u.Name, passSt)
+			   
+			  
+			}
 						  
 			var existeuser bool = false
 
@@ -235,21 +239,7 @@ func server() {
 
 			defer file.Close()
 
-			/*reader := bufio.NewReader(file)
-			scanner := bufio.NewScanner(reader)
-			var password []byte
-			for scanner.Scan() {
-				result := strings.Split(scanner.Text(), " ")
-				if u.Name == result[0] {
-					hashpass := createHash([]byte(result[2]), []byte(u.Pass))
-					if string(hashpass) == result[1] {
-						existeuser = true
-						password = hashpass
-						break
-					}
-
-				}
-			}*/
+			
 			
 			
 			passSaltGen := GetUser(u.Name, u.Pass)

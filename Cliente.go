@@ -143,7 +143,6 @@ type User struct {
 	Conectado string
 	Sal       []byte
 	Clave     []byte
-	newUser string
 }
 
 type Msg struct {
@@ -221,7 +220,6 @@ func MakeSal(sal *[]byte) {
 
 func client(c string, p string, nuevoUser string) {
 	
-	fmt.Println(nuevoUser)
 	cli_keys, err := rsa.GenerateKey(rand.Reader, 1024) // generamos un par de claves (privada, pública) para el servidor
 	chk(err)
 	cli_keys.Precompute() // aceleramos su uso con un precálculo
@@ -275,21 +273,26 @@ func client(c string, p string, nuevoUser string) {
 	// redefinimos los encoder/decoder JSON para que trabajen sobre la conexión cifrada con AES
 	je = json.NewEncoder(aeswr)
 	jd = json.NewDecoder(aesrd)
-	je.Encode(&Msg{Usuario: nuevoUser, Comando: nuevoUser, Nombre: nuevoUser, Destino: nuevoUser})
-	var meme Msg
-	jd.Decode(&meme)
-	  if(meme.Comando == "nuevoUserOK") {
-	    fmt.Println("Se ha creado un nuevo usuario con éxito")
-	  }
+	
 	    
+	
+	je.Encode(&User{Name: c, Pass: p})
+	
+	if(nuevoUser == "nuevoUserCrear") {	
+	  
+	  je.Encode(&Msg{Usuario: nuevoUser, Comando: nuevoUser, Nombre: nuevoUser, Destino: nuevoUser})
+	  fmt.Println("Usuario creado, haciendo login...\n");
+	  
+	} else {
+	  je.Encode(&Msg{Usuario: nuevoUser, Comando: "nada", Nombre: nuevoUser, Destino: nuevoUser})
+	}
+	var u User
+	jd.Decode(&u)
+	
 	fmt.Println("Introduzca Comando [up/down/delete/Salir] Nombre fichero  Ruta fichero")
 	fmt.Println("Ejemplo : up ejemplo.txt | up ejemplo.txt carpeta/p1 | down ejemplo.txt | delete ejemplo.txt | Salir")
 
 	keyscan := bufio.NewScanner(os.Stdin) // scanner para la entrada estándar (teclado)
-
-	je.Encode(&User{Name: c, Pass: p, newUser: nuevoUser})
-	var u User
-	jd.Decode(&u)
 
 	leemos := true
 	if u.Conectado == "Ok" {
