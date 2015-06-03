@@ -60,6 +60,7 @@ type User struct {
 	Sal       []byte
 	Conectado string
 	Clave     []byte
+	newUser string
 }
 
 type Pass struct {
@@ -101,6 +102,37 @@ func MakeSal(sal *[]byte) {
 	*sal = make([]byte, 16)
 	_, err := rand.Read(*sal)
 	check(err)
+}
+
+func CreatePass(user string, password string) Pass {
+	if user == "" || password == "" {
+		log.Fatal("User/Password is null")
+	}
+	//pUser := new(Pass)
+	var pUser Pass
+	MakeSal(&pUser.Sal)
+	pUser.PasswordSal = createHash(pUser.Sal, []byte(password))
+	
+	return pUser
+}
+
+func StoreUser(user string, pass Pass) {
+	var warehouse map[string]Pass
+			if _, err := os.Stat(directory + "user.txt"); os.IsNotExist(err) {
+				os.Mkdir(directory, 0777)
+				os.Create(directory + "user.txt")
+				warehouse = make(map[string]Pass)
+			}
+	
+	bytes, err := ioutil.ReadFile(directory + "user.txt")
+	if err != nil {
+		fmt.Println("no es nil")
+		warehouse = make(map[string]Pass)
+	}
+	json.Unmarshal(bytes, &warehouse)
+	warehouse[user] = pass
+	bytes, err = json.Marshal(warehouse)
+	ioutil.WriteFile(directory + "user.txt", bytes, 0666)
 }
 
 // gestiona el modo servidor
@@ -167,6 +199,21 @@ func server() {
 			// redefinimos los encoder/decoder JSON para que trabajen sobre la conexión cifrada con AES
 			je = json.NewEncoder(aeswr)
 			jd = json.NewDecoder(aesrd)
+			
+			var meme Msg
+			jd.Decode(&meme)
+			
+			
+			if(meme.Comando=="nuevoUserCrear") {
+			  fmt.Println("Soy el servidor, creando nuevo usuario...")
+			  passSt := CreatePass(user, pass)
+			  StoreUser(user, passSt)
+			  je.Encode(&Msg{Usuario: "NADA", Comando: "nuevoUserOK", Nombre: "NADA", Destino: "NADA"})    
+			  
+			} else {
+			  je.Encode(&Msg{Usuario: "NADA", Comando: "nuevoUserNO", Nombre: "NADA", Destino: "NADA"})
+			}
+			
 
 			var i string = ""
 			var cont int = 0
@@ -174,6 +221,7 @@ func server() {
 
 			var u User
 			jd.Decode(&u)
+						  
 			var existeuser bool = false
 
 			
@@ -202,6 +250,8 @@ func server() {
 
 				}
 			}*/
+			
+			
 			passSaltGen := GetUser(u.Name, u.Pass)
 			if( passSaltGen != nil) {
 				existeuser = true			
@@ -264,6 +314,7 @@ func server() {
 			fmt.Println("cierre[", port, "]")
 
 		}()
+		
 	}
 }
 
