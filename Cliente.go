@@ -68,6 +68,8 @@ type Pass struct {
 	Sal []byte `json:"sal"`
 	PasswordSal []byte `json:"passwordSal"`
 }
+
+
 /*
 func CreatePass(user string, password string) Pass {
 	if user == "" || password == "" {
@@ -278,8 +280,8 @@ func client(c string, p string, nuevoUser string) {
 	var u User
 	jd.Decode(&u)
 	
-	fmt.Println("Introduzca Comando [up/down/delete/Salir] Nombre fichero  Ruta fichero")
-	fmt.Println("Ejemplo : up ejemplo.txt | up ejemplo.txt carpeta/p1 | down ejemplo.txt | delete ejemplo.txt | Salir")
+	fmt.Println("Introduzca Comando [up/down/delete/listar/Salir] Nombre fichero  Ruta fichero")
+	fmt.Println("Ejemplo : up ejemplo.txt | up ejemplo.txt carpeta/p1 | Salir")
 
 	keyscan := bufio.NewScanner(os.Stdin) // scanner para la entrada estándar (teclado)
 
@@ -292,7 +294,7 @@ func client(c string, p string, nuevoUser string) {
 			result := strings.Split(keyscan.Text(), " ")
 
 			if len(result) >= 1 && len(result) <= 3 {
-				if result[0] == "Salir" || result[0] == "down" || result[0] == "up" || result[0] == "delete" {
+				if result[0] == "Salir" || result[0] == "down" || result[0] == "up" || result[0] == "delete" || result[0] == "listar"{
 					if len(result) == 2 || len(result) == 3 {
 						if result[0] == "up" {
 							var d []byte
@@ -310,8 +312,12 @@ func client(c string, p string, nuevoUser string) {
 							je.Encode(&Msg{Usuario: c, Comando: result[0], Nombre: result[1], Destino: ""})
 						}
 					} else {
-						je.Encode(&Msg{Usuario: c, Comando: "Salir", Nombre: ""})
-						break
+						if result[0] == "Salir" {
+							je.Encode(&Msg{Usuario: c, Comando: "Salir", Nombre: ""})
+							break
+						}else{
+							je.Encode(&Msg{Usuario: c, Comando: result[0]})
+						}
 					}
 					var m Msg
 					jd.Decode(&m)
@@ -325,6 +331,8 @@ func client(c string, p string, nuevoUser string) {
 						} else {
 							fmt.Println("Fichero seleccionado no existe")
 						}
+					}else if m.Comando == "listar" {
+						fmt.Println(m.Destino)
 					}
 					je.Encode(&Msg{Usuario: c, Comando: "", Nombre: ""})
 					jd.Decode(&m)

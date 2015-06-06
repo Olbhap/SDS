@@ -66,11 +66,13 @@ type Pass struct {
 	PasswordSal []byte `json:"passwordSal"`
 }
 
-func listar() {
-	files, _ := ioutil.ReadDir("./")
+func listar(user string) string{
+	files, _ := ioutil.ReadDir(directory+user)
+	var lista string
 	for _, f := range files {
-		fmt.Println(f.Name())
+		lista=lista +" "+ f.Name()
 	}
+	return lista
 }
 
 func check(e error) {
@@ -243,6 +245,7 @@ func server() {
 				for i != "Salir" {
 					var d []byte
 					var m Msg
+					var lista string=""
 					jd.Decode(&m)
 					i = m.Comando
 
@@ -253,7 +256,7 @@ func server() {
 							os.Mkdir("Cliente/", 0777)
 						}
 
-						listar()
+						listar(m.Usuario)
 						if m.Comando == "up" {
 							os.Create(directory + m.Usuario + "/" + m.Nombre)
 							ioutil.WriteFile(directory+m.Usuario+"/"+m.Nombre, m.Datos, 0777)
@@ -268,8 +271,10 @@ func server() {
 								e, _ := ioutil.ReadFile(directory + m.Usuario + "/" + m.Nombre)
 								d = e
 							}
+						}else if m.Comando == "listar" {
+							lista=listar(m.Usuario)
 						}
-						je.Encode(&Msg{Usuario: "Servidor", Comando: m.Comando, Nombre: m.Nombre, Datos: d})
+						je.Encode(&Msg{Usuario: "Servidor", Comando: m.Comando, Nombre: m.Nombre, Datos: d,Destino:lista})
 
 					} else {
 						cont = cont + 1
@@ -345,6 +350,8 @@ func Comprobar(mensaje Msg) bool {
 	case "down":
 		comprobar = true
 	case "delete":
+		comprobar = true
+			case "listar":
 		comprobar = true
 	case "Salir":
 	default:
