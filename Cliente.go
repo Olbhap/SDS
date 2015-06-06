@@ -21,7 +21,7 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"crypto/rsa"
-	"crypto/sha256"
+	//"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -45,9 +45,6 @@ func chk(e error) {
 func main() {
 
 	fmt.Println("Bienvenido Cliente de clave pública en Go.")
-	if len(os.Args) > 2 {
-		client(os.Args[1], os.Args[2], "No")
-	} else {
 		scanner := bufio.NewScanner(os.Stdin)
 		fmt.Println("Seleccione una opción: ")
 		fmt.Println(" [1] Registrar usuario")
@@ -64,12 +61,6 @@ func main() {
 					fmt.Println("Entrada incorrecta")
 					break;
 			}
-		
-
-		
-			
-		
-	}
 }
 
 
@@ -77,12 +68,11 @@ type Pass struct {
 	Sal []byte `json:"sal"`
 	PasswordSal []byte `json:"passwordSal"`
 }
-
+/*
 func CreatePass(user string, password string) Pass {
 	if user == "" || password == "" {
 		log.Fatal("User/Password is null")
 	}
-	//pUser := new(Pass)
 	var pUser Pass
 	MakeSal(&pUser.Sal)
 	pUser.PasswordSal = createHash(pUser.Sal, []byte(password))
@@ -108,6 +98,29 @@ func StoreUser(user string, pass Pass) {
 	bytes, err = json.Marshal(warehouse)
 	ioutil.WriteFile(directory + "user.txt", bytes, 0666)
 }
+/*
+func createHash(sal []byte, pass []byte) []byte {
+
+	tmp := make([]byte, len(sal)+len(pass))
+
+	copy(tmp[:16], sal)
+	copy(tmp[16:], pass)
+
+	hasher := sha256.New()
+	hasher.Reset()
+	_, err := hasher.Write(tmp)
+	check(err)
+
+	resume := hasher.Sum(nil)
+
+	return resume
+}
+
+func MakeSal(sal *[]byte) {
+	*sal = make([]byte, 16)
+	_, err := rand.Read(*sal)
+	check(err)
+}*/
 
 
 func registrar() string {
@@ -118,8 +131,6 @@ func registrar() string {
 	fmt.Print("Introduce tu contraseña: ")
 	scanner.Scan()
 	pass := scanner.Text()
-	//passSt := CreatePass(user, pass)
-	//StoreUser(user, passSt)
 	client(user,pass,"nuevoUserCrear")
 	return user
 }
@@ -195,28 +206,6 @@ func Decipher(ciphertext []byte, cipher_pass []byte) []byte {
 	return plain_text
 }
 
-func createHash(sal []byte, pass []byte) []byte {
-
-	tmp := make([]byte, len(sal)+len(pass))
-
-	copy(tmp[:16], sal)
-	copy(tmp[16:], pass)
-
-	hasher := sha256.New()
-	hasher.Reset()
-	_, err := hasher.Write(tmp)
-	check(err)
-
-	resume := hasher.Sum(nil)
-
-	return resume
-}
-
-func MakeSal(sal *[]byte) {
-	*sal = make([]byte, 16)
-	_, err := rand.Read(*sal)
-	check(err)
-}
 
 func client(c string, p string, nuevoUser string) {
 	
