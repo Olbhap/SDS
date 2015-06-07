@@ -338,6 +338,9 @@ func client(c string, p string, nuevoUser string) {
 							fmt.Println("Fichero seleccionado no existe")
 						}
 					}else if m.Comando == "listar" {
+						if(m.Destino=="") {
+							m.Destino = "No hay ningún fichero en su cuenta"
+						}
 						fmt.Println(m.Destino)
 					}
 					je.Encode(&Msg{Usuario: c, Comando: "", Nombre: ""})

@@ -259,8 +259,8 @@ func server() {
 						listar(m.Usuario)
 						if m.Comando == "up" {
 							if(m.Nombre != "error_subida_fichero") {
-								os.Create(directory + m.Usuario + "/" + m.Nombre)
-								ioutil.WriteFile(directory+m.Usuario+"/"+m.Nombre, m.Datos, 0777)
+							os.Create(directory + m.Usuario + "/" + m.Nombre)
+							ioutil.WriteFile(directory+m.Usuario+"/"+m.Nombre, m.Datos, 0777)
 							}
 
 						} else if m.Comando == "delete" {
