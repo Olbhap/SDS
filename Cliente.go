@@ -71,60 +71,8 @@ type Pass struct {
 
 
 /*
-func CreatePass(user string, password string) Pass {
-	if user == "" || password == "" {
-		log.Fatal("User/Password is null")
-	}
-	var pUser Pass
-	MakeSal(&pUser.Sal)
-	pUser.PasswordSal = createHash(pUser.Sal, []byte(password))
-	
-	return pUser
-}
-
-func StoreUser(user string, pass Pass) {
-	var warehouse map[string]Pass
-			if _, err := os.Stat(directory + "user.txt"); os.IsNotExist(err) {
-				os.Mkdir(directory, 0777)
-				os.Create(directory + "user.txt")
-				warehouse = make(map[string]Pass)
-			}
-	
-	bytes, err := ioutil.ReadFile(directory + "user.txt")
-	if err != nil {
-		fmt.Println("no es nil")
-		warehouse = make(map[string]Pass)
-	}
-	json.Unmarshal(bytes, &warehouse)
-	warehouse[user] = pass
-	bytes, err = json.Marshal(warehouse)
-	ioutil.WriteFile(directory + "user.txt", bytes, 0666)
-}
-/*
-func createHash(sal []byte, pass []byte) []byte {
-
-	tmp := make([]byte, len(sal)+len(pass))
-
-	copy(tmp[:16], sal)
-	copy(tmp[16:], pass)
-
-	hasher := sha256.New()
-	hasher.Reset()
-	_, err := hasher.Write(tmp)
-	check(err)
-
-	resume := hasher.Sum(nil)
-
-	return resume
-}
-
-func MakeSal(sal *[]byte) {
-	*sal = make([]byte, 16)
-	_, err := rand.Read(*sal)
-	check(err)
-}*/
-
-
+* Registro usuario
+*/
 func registrar() string {
 	scanner := bufio.NewScanner(os.Stdin)
 	fmt.Print("Introduce tu usuario: ")
@@ -136,7 +84,9 @@ func registrar() string {
 	client(user,pass,"nuevoUserCrear")
 	return user
 }
-
+/*
+*	Menu de login
+*/
 func menu() {
 	scanner := bufio.NewScanner(os.Stdin)
 
@@ -269,12 +219,12 @@ func client(c string, p string, nuevoUser string) {
 	
 	je.Encode(&User{Name: c, Pass: p})
 	
-	if(nuevoUser == "nuevoUserCrear") {	
-	  
+	//Comprobamos que hemos llamado al cliente desde la opcion del menu "Registrar nuevo usuario"
+	if(nuevoUser == "nuevoUserCrear") {		  
 	  je.Encode(&Msg{Usuario: nuevoUser, Comando: nuevoUser, Nombre: nuevoUser, Destino: nuevoUser})
 	  fmt.Println("Usuario creado, haciendo login...\n");
 	  
-	} else {
+	} else { //Si no, continuamos con normalidad y hacemos login
 	  je.Encode(&Msg{Usuario: nuevoUser, Comando: "nada", Nombre: nuevoUser, Destino: nuevoUser})
 	}
 	var u User
@@ -285,6 +235,7 @@ func client(c string, p string, nuevoUser string) {
 	keyscan := bufio.NewScanner(os.Stdin) // scanner para la entrada estándar (teclado)
 
 	leemos := true
+	//Si el servidor devuelve "Ok" al hacer login...
 	if u.Conectado == "Ok" {
 		fmt.Println("Introduzca Comando [up/down/delete/listar/Salir] Nombre fichero  Ruta fichero")
 		fmt.Println("Ejemplo : up ejemplo.txt | up ejemplo.txt carpeta/p1 | Salir")
@@ -297,7 +248,7 @@ func client(c string, p string, nuevoUser string) {
 			if len(result) >= 1 && len(result) <= 3 {
 				if result[0] == "Salir" || result[0] == "down" || result[0] == "up" || result[0] == "delete" || result[0] == "listar"{
 					if len(result) == 2 || len(result) == 3 {
-						if result[0] == "up" {
+						if result[0] == "up" { //Opcion subir fichero
 							var d []byte
 							if len(result) == 2 {
 								d, _ = ioutil.ReadFile(result[1])
@@ -305,7 +256,7 @@ func client(c string, p string, nuevoUser string) {
 							} else {
 								d, _ = ioutil.ReadFile(result[2] + "/" + result[1])
 							}
-							if(d!=nil) {
+							if(d!=nil) { //Comprobamos en el cliente que el fichero efectivamente existe
 								clave := []byte(u.Clave)
 								fichero := Cipher(d, clave)
 								je.Encode(&Msg{Usuario: c, Comando: result[0], Nombre: result[1], Destino: "", Datos: fichero})
@@ -318,7 +269,7 @@ func client(c string, p string, nuevoUser string) {
 							je.Encode(&Msg{Usuario: c, Comando: result[0], Nombre: result[1], Destino: ""})
 						}
 					} else {
-						if result[0] == "Salir" {
+						if result[0] == "Salir" { //Salir del menu
 							je.Encode(&Msg{Usuario: c, Comando: "Salir", Nombre: ""})
 							break
 						}else{
@@ -327,7 +278,7 @@ func client(c string, p string, nuevoUser string) {
 					}
 					var m Msg
 					jd.Decode(&m)
-					if m.Comando == "down" {
+					if m.Comando == "down" { //Opcion descargar fichero
 						clave := []byte(u.Clave)
 						if m.Datos != nil {
 							datos := Decipher(m.Datos, clave)
@@ -337,7 +288,7 @@ func client(c string, p string, nuevoUser string) {
 						} else {
 							fmt.Println("Fichero seleccionado no existe")
 						}
-					}else if m.Comando == "listar" {
+					}else if m.Comando == "listar" { //Listado de ficheros en la cuenta
 						if(m.Destino=="") {
 							m.Destino = "No hay ningún fichero en su cuenta"
 						}
@@ -360,7 +311,7 @@ func client(c string, p string, nuevoUser string) {
 		keyscan.Scan()
 		op := keyscan.Text()
 		if op != "s" {
-			menu()
+			main()
 		}
 
 	}
