@@ -297,7 +297,7 @@ func client(c string, p string, nuevoUser string) {
 					je.Encode(&Msg{Usuario: c, Comando: "", Nombre: ""})
 					jd.Decode(&m)
 				} else {
-					fmt.Println("Comando Incorrecto.Introduzca up/down/delete/Salir")
+					fmt.Println("Comando Incorrecto.Introduzca up/down/delete/listar/Salir")
 				}
 			} else {
 				leemos = true
