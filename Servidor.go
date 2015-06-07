@@ -121,7 +121,6 @@ func StoreUser(user string, pass Pass) {
 				os.Mkdir(directory, 0777)
 				os.Create(directory + "user.txt")
 				warehouse = make(map[string]Pass)
-				fmt.Println("User creado y warehouse asignado")
 			}
 	
 	bytes, err := ioutil.ReadFile(directory + "user.txt")
@@ -203,34 +202,22 @@ func server() {
 			var i string = ""
 			var cont int = 0
 			var cliente_msg string = ""
-			var existeuser bool = false
-			var usuarioYaRegistrado bool = false
 
 			var u User
-			jd.Decode(&u)			
+			jd.Decode(&u)
+			
 			
 			var meme Msg
-			jd.Decode(&meme)			
+			jd.Decode(&meme)
 			
-			if(meme.Comando=="nuevoUserCrear") {			
-			  
-			  if(GetUser(u.Name, u.Pass) == nil) {
-				  passSt := CreatePass(u.Name, u.Pass)
-				  StoreUser(u.Name, passSt)
-				  fmt.Println("Creando nuevo usuario...")
-				  usuarioYaRegistrado = false
-				} else {
-					usuarioYaRegistrado=true
-					fmt.Println("Error - Usuario ya existe")
-				}			  
+			
+			if(meme.Comando=="nuevoUserCrear") {
+			  fmt.Println("Creando nuevo usuario...")
+			  passSt := CreatePass(u.Name, u.Pass)
+			  StoreUser(u.Name, passSt)			  
 			}
-			/*if(meme.Comando=="nuevoUserCrear") {
-				fmt.Println("Creando nuevo usuario...")
-				passSt := CreatePass(u.Name, u.Pass)
-				StoreUser(u.Name, passSt)
-			}*/
-
-			
+						  
+			var existeuser bool = false
 
 			file, err := os.Open(directory + "user.txt")
 
@@ -238,6 +225,7 @@ func server() {
 				fmt.Println(err)
 				os.Exit(1)
 			}
+
 			defer file.Close()			
 			
 			passSaltGen := GetUser(u.Name, u.Pass)
@@ -247,15 +235,10 @@ func server() {
 				existeuser = false
 			}
 
-			if(usuarioYaRegistrado) {
-				je.Encode(&User{Name: "Servidor", Clave: passSaltGen, Conectado: "UsuarioYaRegistrado"})
-				
-			}else if(existeuser) {
-				je.Encode(&User{Name: "Servidor", Conectado: "Ok"})
-				
-			} else {
+			if(existeuser) {
+				je.Encode(&User{Name: "Servidor", Clave: passSaltGen, Conectado: "Ok"})
+			}else {
 				je.Encode(&User{Name: "Servidor", Conectado: "No"})
-				
 			}
 			
 			if existeuser == true {
