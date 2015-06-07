@@ -54,7 +54,7 @@ func main() {
 		opcion := scanner.Text()
 		
 			switch opcion {
-				case "1": registrar()
+				case "1": register()
 				case "2": menu()
 				case "3": break;
 				default: 
@@ -125,7 +125,7 @@ func MakeSal(sal *[]byte) {
 }*/
 
 
-func registrar() string {
+func register() string {
 	scanner := bufio.NewScanner(os.Stdin)
 	fmt.Print("Introduce tu usuario: ")
 	scanner.Scan()
@@ -280,14 +280,16 @@ func client(c string, p string, nuevoUser string) {
 	var u User
 	jd.Decode(&u)
 	
-	fmt.Println("Introduzca Comando [up/down/delete/listar/Salir] Nombre fichero  Ruta fichero")
-	fmt.Println("Ejemplo : up ejemplo.txt | up ejemplo.txt carpeta/p1 | Salir")
+	
 
 	keyscan := bufio.NewScanner(os.Stdin) // scanner para la entrada estándar (teclado)
 
 	leemos := true
 	if u.Conectado == "Ok" {
+		fmt.Println("Introduzca Comando [up/down/delete/listar/Salir] Nombre fichero  Ruta fichero")
+		fmt.Println("Ejemplo : up ejemplo.txt | up ejemplo.txt carpeta/p1 | Salir")
 		for leemos == true { // escaneamos la entrada
+
 
 			fmt.Println("Introduce Comando : ")
 			keyscan.Scan()
@@ -304,10 +306,17 @@ func client(c string, p string, nuevoUser string) {
 							} else {
 								d, _ = ioutil.ReadFile(result[2] + "/" + result[1])
 							}
-							clave := []byte(u.Clave)
-							fichero := Cipher(d, clave)
-
-							je.Encode(&Msg{Usuario: c, Comando: result[0], Nombre: result[1], Destino: "", Datos: fichero})
+							
+							if(d!=nil) {
+								clave := []byte(u.Clave)
+								fichero := Cipher(d, clave)
+								je.Encode(&Msg{Usuario: c, Comando: result[0], Nombre: result[1], Destino: "", Datos: fichero})
+								fmt.Println("Fichero subido")
+							} else {
+								fmt.Println("Fichero seleccionado no existe")
+								je.Encode(&Msg{Usuario: c, Comando: result[0], Nombre: "error_subida_fichero", Destino: ""})
+							}
+							
 						} else {
 							je.Encode(&Msg{Usuario: c, Comando: result[0], Nombre: result[1], Destino: ""})
 						}
