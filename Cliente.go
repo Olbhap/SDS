@@ -272,7 +272,7 @@ func client(c string, p string, nuevoUser string) {
 	if(nuevoUser == "nuevoUserCrear") {	
 	  
 	  je.Encode(&Msg{Usuario: nuevoUser, Comando: nuevoUser, Nombre: nuevoUser, Destino: nuevoUser})
-	  fmt.Println("Usuario creado, haciendo login...\n");
+	  fmt.Println("Creando usuario y haciendo login...\n");
 	  
 	} else {
 	  je.Encode(&Msg{Usuario: nuevoUser, Comando: "nada", Nombre: nuevoUser, Destino: nuevoUser})
@@ -341,12 +341,16 @@ func client(c string, p string, nuevoUser string) {
 							fmt.Println("Fichero seleccionado no existe")
 						}
 					}else if m.Comando == "listar" {
-						fmt.Println(m.Destino)
+						if(m.Destino !="") {
+							fmt.Println(m.Destino)
+							} else {
+								fmt.Println("No hay ningún fichero en la lista")
+							}
 					}
 					je.Encode(&Msg{Usuario: c, Comando: "", Nombre: ""})
 					jd.Decode(&m)
 				} else {
-					fmt.Println("Comando Incorrecto.Introduzca up/down/delete/Salir")
+					fmt.Println("Comando Incorrecto.Introduzca up/down/delete/listar/Salir")
 				}
 			} else {
 				leemos = true
@@ -360,8 +364,17 @@ func client(c string, p string, nuevoUser string) {
 		keyscan.Scan()
 		op := keyscan.Text()
 		if op != "s" {
-			menu()
+			main()
 		}
 
+	} else if u.Conectado == "UsuarioYaRegistrado" {
+		keyscan := bufio.NewScanner(os.Stdin)
+		fmt.Println("El Usuario ya existe")
+		fmt.Println("¿Desea Salir? s/n")
+		keyscan.Scan()
+		op := keyscan.Text()
+		if op != "s" {
+			main()
+		}
 	}
 }
